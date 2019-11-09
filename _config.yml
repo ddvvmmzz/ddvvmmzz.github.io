@@ -7,7 +7,7 @@ author:
 
 baseurl: /
 
-excerpt_separator:  '<!--more-->'
+excerpt_separator:  <!--more-->
 
 source: .
 destination: ./_site
