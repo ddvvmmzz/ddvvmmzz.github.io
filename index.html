@@ -8,9 +8,6 @@ layout: default
           <h2><a href="{{ post.url | prepend: site.baseurl | replace: '//', '/' }}">{{ post.title }}</a></h2>
           <time datetime="{{ post.date | date_to_xmlschema }}">{{ post.date | date_to_string }}</time>
           {{ post.excerpt }}
-          <!-- {% if post.content contains '<!--more-->' %} -->
-            <!-- {{ post.content | split:'<!--more-->' | first }} -->
-            <!-- <a href="#more>阅读全文 →</a> -->
       </li>
     {% endfor %}
 </ul>

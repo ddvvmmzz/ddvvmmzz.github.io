@@ -1,3 +1,7 @@
+---
+excerpt_separator: <!--more-->
+---
+
 title: ddvv-blog
 description: "ddvvmmzz"
 author:
@@ -6,8 +10,6 @@ author:
   url: "ddvvmmzz.github.io"
 
 baseurl: /
-
-excerpt_separator:  <!--more-->
 
 source: .
 destination: ./_site
