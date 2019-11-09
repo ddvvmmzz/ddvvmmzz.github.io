@@ -1,1 +1,9 @@
-<span>&copy; {{ site.time | date: '%Y' }} {{ site.owner.name }}. Powered by <a href="http://jekyllrb.com" rel="nofollow">Jekyll</a> using the <a href="http://github.com/aron-bordin/neo-hpstr-jekyll-theme" rel="nofollow">Neo-HPSTR Theme</a>.</span>
+<footer>
+  <a href="https://creativecommons.org/licenses/by-nc/3.0/deed.en_US">
+    <span>
+        <b>{{ site.owner}}</b>
+    </span>
+    {% capture currentyear %}{{ 'now' | date: "%Y" }}{% endcapture %}
+    <span>© {{ currentyear }}</span>
+  </a>
+</footer>
