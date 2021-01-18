@@ -1,0 +1,173 @@
+---
+title: "python_mmdt:从无到有的恶意代码分类器(二)"
+published: true
+---
+
+## 概述
+
+上篇文章[python_mmdt:一种基于敏感哈希生成特征向量的python库(一)](https://ddvvmmzz.github.io/python_mmdt-%E4%B8%80%E7%A7%8D%E5%9F%BA%E4%BA%8E%E6%95%8F%E6%84%9F%E5%93%88%E5%B8%8C%E7%94%9F%E6%88%90%E7%89%B9%E5%BE%81%E5%90%91%E9%87%8F%E7%9A%84python%E5%BA%93(%E4%B8%80))我们介绍了一种叫`mmdt`的敏感哈希生成方法，并对其中的概念做了基本介绍。本篇，我们重点谈谈`mmdt`敏感哈希的分类应用场景。
+
+<!--more-->
+
+## 代码项目地址
+
+* [python_mmdt](https://github.com/a232319779/python_mmdt)
+* 版本：0.1.3
+* 特性：实现简单分类器
+
+## 基本命令介绍
+
+使用`pip`安装`python_mmdt`之后，会向系统中添加如下命令：
+
+* mmdt-hash：计算指定文件的`mmdt_hash`值
+* mmdt-std：计算`mmdt_hash`的标准差
+* mmdt-compare：比较两个文件的`相似度`
+* mmdt-gen：利用已知样本集，生成基于`mmdt_hash`的特征向量集合
+* mmdt-filter：对生成的的特征向量集合，进行过滤，移除相通的特征向量
+* mmdt-filter-simple：对生成的特征向量集，进行简单过滤（去重），适用与简单分类器
+* mmdt-classify：对未知样本集进行分类处理，输出分类结果
+
+## 基本命令使用
+
+### 1. 计算文件的`mmdt_hash`
+
+计算单个文件`mmdt_hash`值
+
+* 输入参数1：文件路径
+* 屏幕输出：`mmdt_hash`的值
+* 文件输出：无
+
+```sh
+# ➜ mmdt-hash APT28_1
+#   5D58573C:B39A90BCDCB4D491BEC74B207AE5FE39
+$ mmdt-hash $file
+```
+
+### 2. 计算`mmdt_hash`的标准差
+
+计算单个`mmdt_hash`值的标准差
+
+* 输入参数1：单个`mmdt_hash`值
+* 屏幕输出：`mmdt_hash`值的标准差
+* 文件输出：无
+
+```sh
+# ➜ mmdt-std 5D58573C:B39A90BCDCB4D491BEC74B207AE5FE39
+#   standard deviation: 45.333946
+$ mmdt-std $mmdt_hash_str
+```
+
+### 3. 计算两个文件的相似度
+
+计算两个文件的相似度，输入2个文件路径，输出
+
+* 输入参数1：文件1路径
+* 输入参数2：文件2路径
+* 屏幕输出：两个文件的相似度
+* 文件输出：无
+
+```sh
+# ➜ mmdt-compare APT28_1 APT28_2
+#   0.9929302916167373
+$ mmdt-compare $file1 $file2
+```
+
+### 4. 生成特征向量集合
+
+生成基于mmdt_hash的特征向量集合
+
+* 输入参数1：已知样本集的路径
+* 输入参数2：已知样本集的标签文件路径
+* 屏幕输出：生成特征向量过程信息
+* 文件输出：当前文件夹生成两个文件，`mmdt_feature.label`和`mmdt_feature.data`
+
+```sh
+# ➜ mmdt-gen APT28 apt28.tags
+#   ...
+#   process: APT28_3, 22
+#   process: APT28_4, 23
+#   end gen mmdt set.
+# ➜ ll mmdt_feature.*
+#   -rw-r--r--  1 ddvv  staff   703B  1 16 10:34 mmdt_feature.data
+#   -rw-r--r--  1 ddvv  staff   133B  1 16 10:34 mmdt_feature.label
+$ mmdt-gen $file_path $file_tag
+```
+
+### 5. 特征向量过滤
+
+对生成的特征向量集合进行过滤处理
+
+* 输入参数1：特征向量集合文件
+* 输入参数2：过滤条件的标准差下限
+* 屏幕输出：过滤特征向量过程信息
+* 文件输出：覆盖输入的**特征向量集合文件路径**
+
+```sh
+# ➜ mmdt-filter mmdt_feature.data 10.0
+#   start filter mmdt set.
+#   old len: 23
+#   new len: 21
+#   end filter mmdt set.
+# ➜ ll mmdt_feature.*
+#   -rw-r--r--  1 ddvv  staff   689B  1 16 10:39 mmdt_feature.data
+#   -rw-r--r--  1 ddvv  staff   133B  1 16 10:34 mmdt_feature.label
+$ mmdt-filter $mmdt_feature_file_name $dlt
+```
+
+### 6. 简单分类器特征向量过滤
+
+对生成的基于`mmdt_hash`特征向量集合进行适配简单分类器(去重)过滤处理
+
+* 输入参数1：特征向量集合文件
+* 屏幕输出：过滤特征向量过程信息
+* 文件输出：覆盖当前路径的`mmdt_feature.data`文件
+
+```sh
+# ➜ mmdt-filter-simple mmdt_feature.data
+#   start filter mmdt set.
+#   old len: 21
+#   new len: 21
+#   end filter mmdt set.
+# ➜ ll mmdt_feature.*
+#   -rw-r--r--  1 ddvv  staff   689B  1 16 10:39 mmdt_feature.data
+#   -rw-r--r--  1 ddvv  staff   133B  1 16 10:34 mmdt_feature.label
+$ mmdt-filter-simple $mmdt_feature_file_name
+```
+
+### 7. 分类器的使用
+
+对指定文件或文件夹进行分类识别
+
+* 输入参数1：目标文件路径或文件夹路径
+* 输入参数2：相似度下限，可选，默认0.95
+* 输入参数3：分类器类型，可选，默认1，简单分类器
+* 屏幕输出：分类过程结果输出
+* 文件输出：无
+
+**重要**，需要将生成的`mmdt_feature.label`和`mmdt_feature.data`文件拷贝到`python_mmdt`的安装路径，命令如下：
+
+* 拷贝特征向量集文件：`mmdt-copy mmdt_feature.data`
+* 拷贝特征向量集对应标签文件：`mmdt-copy mmdt_feature.label`
+
+特别注意：
+
+* `mmdt_feature.label`和`mmdt_feature.data`文件名不可更改
+* **当缺失`mmdt_feature.data`文件时，分类器默认是用`python_mmdt`的特征向量集**
+* **当缺失`mmdt_feature.label`文件时，分类器仍可以工作，但是判定结果仅输出是否识别文件，而不会输出对应的判定标签**
+
+```sh
+# ➜ mmdt-classify . 0.8 1
+#   ...
+#   ./APT28_5,1.000000,group_apt28,39.660364
+#   ./APT28_2,0.992930,group_apt28,44.917703
+#   ./APT28_23,1.000000,group_apt28,39.682770
+#   ...
+# 注意：缺失mmdt_feature.label文件时，只会输出是否匹配，而不会输出对应标签
+# ➜ mmdt-classify . 0.8 1
+#   ...
+#   ./APT28_5,1.000000,matched,39.660364
+#   ./APT28_2,0.992930,matched,44.917703
+#   ./APT28_23,1.000000,matched,39.682770
+#   ...
+$ mmdt-classify $file_or_path $sim_value $classify_type
+```
