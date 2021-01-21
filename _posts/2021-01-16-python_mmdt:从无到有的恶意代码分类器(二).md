@@ -1,5 +1,5 @@
 ---
-title: "python_mmdt:从无到有的恶意代码分类器(二)"
+title: "python_mmdt:从0到1--实现简单恶意代码分类器(二)"
 published: true
 ---
 
@@ -9,11 +9,48 @@ published: true
 
 <!--more-->
 
+## 需求场景
+
+设想这么一个需求：有一批文件需要判定是否属于恶意文件，并且需要给出恶意文件所属的家族类型。这个需求该怎么高效处理呢？处理过程又该怎么固化成我们自己的经验呢？当以后面临同样的需求时，能否复用之前的结果呢？
+
+我能想到的做法有以下三种：
+
+* 做法一：本地下载杀毒软件，使用杀毒软件对这批文件进行扫描，查看检测结果。
+* 做法二：将这些文件上传到诸如Virustotal之类的检测平台，查看检测结果。
+* 做法三：随机抽取样本分析，判定为恶意的，则提取yara规则，利用yara规则对剩余文件进行扫描，未扫出的文件继续人工分析，继续提yara规则，如此反复，直到处理完成。
+
+针对以上三种做法，分别讨论其优点和缺点：
+
+* 做法一：
+  * 优点：处理方式简单快捷，误报率极低，处理效率高
+  * 缺点：单一杀软漏报率可能较高；在Linux/MacOS上安装、使用杀软不方便；处理过程很难固化为经验；有可能导致文件泄漏（联网使用杀软云查可能导致文件被厂商收集）
+* 做法二：
+  * 优点：适用Windows/Linux/MacOS平台；检测误报率、漏报率都极低，结果丰富；处理效率高
+  * 缺点：有联网要求；有一定的代码开发工作；文件百分百泄漏
+* 做法三：
+  * 优点：处理过程天然可固化为经验；适用任意平台；适用隔离网络；经验可积累，可复用；保证文件安全性
+  * 缺点：工作量极大，处理效率极低；
+
+需求场景可能太过定制化，但还是有一定的代表性的。针对以上的需求场景，`python_mmdt`工具的分类算法，可以很好的覆盖上。
+
+使用`python_mmdt`做法，具有以下优点
+
+* 处理方式简单、快捷、处理效率高
+* 可打包为可执行文件，附带特征向量，跨平台适用Windows/Linux/MacOS
+* 无联网要求，文件保密性高
+* 处理过程可固化为经验，处理结果可无条件复用
+* `mmdt`敏感哈希大小固定，存储占用空间小
+
+当然，有两个缺点不能不提：
+
+* 误报率可能较高（依赖于判定分值的设定）
+* 漏报率可能较高（依赖于判定分值的设定）
+
 ## 代码项目地址
 
 * [python_mmdt](https://github.com/a232319779/python_mmdt)
 * 版本：0.1.3
-* 特性：实现简单分类器
+* 特性：实现简单分类器，项目附带基础敏感哈希特征库，可实现恶意样本匹配
 
 ## 基本命令介绍
 
@@ -43,6 +80,8 @@ published: true
 $ mmdt-hash $file
 ```
 
+![](../images/python_mmdt/2/mmdt-hash.png)
+
 ### 2. 计算`mmdt_hash`的标准差
 
 计算单个`mmdt_hash`值的标准差
@@ -57,6 +96,7 @@ $ mmdt-hash $file
 $ mmdt-std $mmdt_hash_str
 ```
 
+![](../images/python_mmdt/2/mmdt-std.png)
 ### 3. 计算两个文件的相似度
 
 计算两个文件的相似度，输入2个文件路径，输出
@@ -71,6 +111,8 @@ $ mmdt-std $mmdt_hash_str
 #   0.9929302916167373
 $ mmdt-compare $file1 $file2
 ```
+
+![](../images/python_mmdt/2/mmdt-compare.png)
 
 ### 4. 生成特征向量集合
 
@@ -93,6 +135,8 @@ $ mmdt-compare $file1 $file2
 $ mmdt-gen $file_path $file_tag
 ```
 
+![](../images/python_mmdt/2/mmdt-gen.png)
+
 ### 5. 特征向量过滤
 
 对生成的特征向量集合进行过滤处理
@@ -114,6 +158,8 @@ $ mmdt-gen $file_path $file_tag
 $ mmdt-filter $mmdt_feature_file_name $dlt
 ```
 
+![](../images/python_mmdt/2/mmdt-filter.png)
+
 ### 6. 简单分类器特征向量过滤
 
 对生成的基于`mmdt_hash`特征向量集合进行适配简单分类器(去重)过滤处理
@@ -133,6 +179,8 @@ $ mmdt-filter $mmdt_feature_file_name $dlt
 #   -rw-r--r--  1 ddvv  staff   133B  1 16 10:34 mmdt_feature.label
 $ mmdt-filter-simple $mmdt_feature_file_name
 ```
+
+![](../images/python_mmdt/2/mmdt-filter_2.png)
 
 ### 7. 分类器的使用
 
@@ -165,9 +213,11 @@ $ mmdt-filter-simple $mmdt_feature_file_name
 # 注意：缺失mmdt_feature.label文件时，只会输出是否匹配，而不会输出对应标签
 # ➜ mmdt-classify . 0.8 1
 #   ...
-#   ./APT28_5,1.000000,matched,39.660364
-#   ./APT28_2,0.992930,matched,44.917703
-#   ./APT28_23,1.000000,matched,39.682770
+#   ./APT28_5,1.000000,matched_0,39.660364
+#   ./APT28_2,0.992930,matched_0,44.917703
+#   ./APT28_23,1.000000,matched_0,39.682770
 #   ...
 $ mmdt-classify $file_or_path $sim_value $classify_type
 ```
+
+![](../images/python_mmdt/2/mmdt-classify.png)
