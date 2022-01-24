@@ -1,5 +1,5 @@
 ---
-title: "python_mmdt:从2到3--mmdt_hash的在线使用(四)"
+title: "python_mmdt:mmdthash的在线使用(四)"
 published: true
 ---
 
